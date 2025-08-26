@@ -1,7 +1,9 @@
 import fastify from 'fastify';
 import { createCourse } from './http/routes/create-courses.ts';
 import { getCoursesList } from './http/routes/get-courses.ts';
-// import crypto from 'node:crypto';
+import { db } from './db/client.ts';
+import { courses } from './db/schema.ts';
+import { eq } from 'drizzle-orm';
 
 export const server = fastify({
   logger: {
@@ -15,39 +17,10 @@ export const server = fastify({
   },
 })
 
-export const courses = [
-  { id: '1', title: 'Curso de Node.js' },
-  { id: '2', title: 'Curso de React' },
-  { id: '3', title: 'Curso de React Native' },
-]
-
 server.register(createCourse)
 server.register(getCoursesList)
 
-// server.get('/courses', (request, reply) => {
-//   return reply.send({ courses })
-// })
-
-// server.post('/courses', (request, reply) => {
-//   type Body = {
-//     title: string
-//   }
-
-//   const courseId = crypto.randomUUID()
-
-//   const body = request.body as Body
-//   const courseTitle = body.title
-
-//   if (!courseTitle) {
-//     return reply.status(400).send({ message: 'Título obrigatório.' })
-//   }
-
-//   courses.push({ id: courseId, title: courseTitle })
-
-//   return reply.status(201).send({ courseId })
-// })
-
-server.get('/courses/:id', (request, reply) => {
+server.get('/courses/:id', async(request, reply) => {
   type Params = {
     id: string
   }
@@ -55,10 +28,14 @@ server.get('/courses/:id', (request, reply) => {
   const params = request.params as Params
   const courseId = params.id
 
-  const course = courses.find(course => course.id === courseId)
+  const result = await db
+  .select()
+  .from(courses)
+  .where(eq(courses.id, courseId))
 
-  if (course) {
-    return { course }
+  //select() always returns an array, so check the length and return the first item in the array.
+  if (result.length > 0) {
+    return { course: result[0] }
   }
 
   return reply.status(404).send()
