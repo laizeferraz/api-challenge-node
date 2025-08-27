@@ -1,9 +1,10 @@
 import fastify from 'fastify';
-import { createCourse } from './http/routes/create-courses.ts';
-import { getCoursesList } from './http/routes/get-courses.ts';
-import { db } from './db/client.ts';
-import { courses } from './db/schema.ts';
-import { eq } from 'drizzle-orm';
+import { validatorCompiler, serializerCompiler, type ZodTypeProvider, jsonSchemaTransform } from 'fastify-type-provider-zod';
+import { fastifySwagger } from '@fastify/swagger';
+import { createCourseRoute } from './http/routes/create-courses.ts';
+import { getCoursesListRoute } from './http/routes/get-courses.ts';
+import { getCourseByIdRoute } from './http/routes/get-course-by-id.ts';
+import scalarAPIReference from '@scalar/fastify-api-reference'; //use it instead of swagger ui because it has a better ui
 
 export const server = fastify({
   logger: {
@@ -15,32 +16,34 @@ export const server = fastify({
       },
     },
   },
+}).withTypeProvider<ZodTypeProvider>()
+
+if (process.env.NODE_ENV === 'development') {
+  server.register(fastifySwagger, {
+  openapi: {
+    info: {
+      title: 'Node.js challenge',
+      version: '1.0.0'
+    }
+  },
+  transform: jsonSchemaTransform
 })
 
-server.register(createCourse)
-server.register(getCoursesList)
-
-server.get('/courses/:id', async(request, reply) => {
-  type Params = {
-    id: string
+server.register(scalarAPIReference, {
+  routePrefix: '/docs',
+  configuration: {
+    theme: 'kepler'
   }
-
-  const params = request.params as Params
-  const courseId = params.id
-
-  const result = await db
-  .select()
-  .from(courses)
-  .where(eq(courses.id, courseId))
-
-  //select() always returns an array, so check the length and return the first item in the array.
-  if (result.length > 0) {
-    return { course: result[0] }
-  }
-
-  return reply.status(404).send()
 })
+}
 
+server.setSerializerCompiler(serializerCompiler) //to convert output data in a different format
+server.setValidatorCompiler(validatorCompiler) //to validate entry data
+
+
+server.register(createCourseRoute)
+server.register(getCoursesListRoute)
+server.register(getCourseByIdRoute)
 
 server.listen({ port: 3333 }).then(() => {
   console.log('HTTP server running!')
