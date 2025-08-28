@@ -15,6 +15,34 @@
       "when": 1756189188899,
       "tag": "0001_furry_korath",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756367931469,
+      "tag": "0002_odd_ego",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756368184562,
+      "tag": "0003_freezing_reptil",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1756370578973,
+      "tag": "0004_glossy_vargas",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1756371219888,
+      "tag": "0005_pretty_siren",
+      "breakpoints": true
     }
   ]
 }
