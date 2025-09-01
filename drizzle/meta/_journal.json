@@ -43,6 +43,13 @@
       "when": 1756371219888,
       "tag": "0005_pretty_siren",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1756448130434,
+      "tag": "0006_solid_mordo",
+      "breakpoints": true
     }
   ]
 }

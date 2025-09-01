@@ -5,6 +5,7 @@ import { createCourseRoute } from './http/routes/create-courses.ts';
 import { getCoursesListRoute } from './http/routes/get-courses.ts';
 import { getCourseByIdRoute } from './http/routes/get-course-by-id.ts';
 import scalarAPIReference from '@scalar/fastify-api-reference'; //use it instead of swagger ui because it has a better ui
+import { loginRoute } from './http/routes/login.ts';
 
 const server = fastify({
   logger: {
@@ -44,5 +45,6 @@ server.setValidatorCompiler(validatorCompiler) //to validate entry data
 server.register(createCourseRoute)
 server.register(getCoursesListRoute)
 server.register(getCourseByIdRoute)
+server.register(loginRoute)
 
 export { server }
