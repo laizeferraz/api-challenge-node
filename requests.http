@@ -1,14 +1,26 @@
 POST http://localhost:3333/courses
 Content-Type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNWFjNDRhNC00MjBkLTRkYTAtYTk2Mi0xMzIwODg2ZTM3YjEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY3MjAwNjV9.vy_oR6Iu3YUIlrri7bCBMzYatIDtNrCz5jzw_pI48Wc
 
 {
-  "title": "Curso de Docker"
+  "title": "PHP course"
 }
 
 ###
 
-GET http://localhost:3333/courses
+GET http://localhost:3333/courses?orderBy=title
 
 ###
 
-GET http://localhost:3333/courses/df34f55c-e4bf-46d0-af7d-4a761c56493d
+GET http://localhost:3333/courses/da7fdf01-a729-4106-b5e4-e020c9f66a51
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNWFjNDRhNC00MjBkLTRkYTAtYTk2Mi0xMzIwODg2ZTM3YjEiLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc1NjcxNzU3MX0.MJhkYv8_C42gjOpyzhtSnE7-hA3VBXyaJjuTQdW00Yw
+
+###
+
+POST http://localhost:3333/login
+Content-Type: application/json
+
+{
+  "email": "Baylee_Schmitt11@gmail.com",
+  "password": "123654"
+}

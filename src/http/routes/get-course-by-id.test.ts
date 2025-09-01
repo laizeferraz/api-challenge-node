@@ -2,15 +2,18 @@ import { test, expect } from 'vitest'
 import request from 'supertest'
 import { server } from '../../app.ts'
 import { makeCourse } from '../../tests/factories/make-course.ts'
+import { makeAuthenticatedUser } from '../../tests/factories/make-user.ts'
 
 test('get course by id', async() => {
 
   await server.ready()
 
+  const { token } = await makeAuthenticatedUser('student')
   const course = await makeCourse()
 
   const response = await request(server.server)
     .get(`/courses/${course.id}`)
+    .set('Authorization', token)
   
   expect(response.status).toEqual(200)
   expect(response.body).toEqual({
@@ -26,8 +29,11 @@ test('return 404 for course not found', async() => {
 
   await server.ready()
 
+  const { token } = await makeAuthenticatedUser('student')
+
   const response = await request(server.server)
     .get(`/courses/0dab9342-ec8d-4f4e-a409-d7a1fa54f336`)
+    .set('Authorization', token)
   
   expect(response.status).toEqual(404)
 })

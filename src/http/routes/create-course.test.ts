@@ -2,14 +2,18 @@ import { test, expect } from 'vitest'
 import request from 'supertest'
 import { server } from '../../app.ts'
 import { faker } from '@faker-js/faker'
+import { makeAuthenticatedUser } from '../../tests/factories/make-user.ts'
 
 test('create a new course successfully', async() => {
 
   await server.ready()
 
+  const { token } = await makeAuthenticatedUser('admin')
+
   const response = await request(server.server)
   .post('/courses')
   .set('Content-Type', 'application/json')
+  .set('Authorization', token)
   .send({ title: faker.lorem.words(2)})
   
   expect(response.status).toEqual(201)

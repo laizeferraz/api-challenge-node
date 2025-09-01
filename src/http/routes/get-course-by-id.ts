@@ -31,7 +31,7 @@ export const getCourseByIdRoute: FastifyPluginAsyncZod = async (server) => {
   }
 }, async(request, reply) => {
 
-  const user = getAuthenticatedUser(request) //to guarantee that the user exists and is authenticated to have access to this route
+  getAuthenticatedUser(request) //to guarantee that the user exists and is authenticated to have access to this route
 
   const courseId = request.params.id
 
