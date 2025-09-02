@@ -1,21 +1,32 @@
 # Node.js Challenge API
 
-Small Fastify + TypeScript API used for the Rocketseat challenge. Implements basic CRUD-like endpoints for "courses" using Drizzle ORM and Postgres. Includes OpenAPI docs served via a nicer UI at `/docs` in development.
+Lightweight Fastify + TypeScript API used in the Rocketseat challenge. It provides a small "courses" API backed by Postgres via Drizzle ORM. The project includes authentication (JWT), password hashing (argon2), tests (Vitest + Supertest), factories (Faker), seeding, and OpenAPI docs in development.
 
 ## Tech stack
 
-- Node.js (ESM)
+- Node.js (ESM) — project uses a Node 22+ runtime which has native TypeScript support
 - TypeScript
 - Fastify
 - Drizzle ORM (Postgres)
-- Zod for request/response schemas
-- @scalar/fastify-api-reference (API docs)
+- Zod (validation)
+- jsonwebtoken (JWT)
+- argon2 (password hashing)
+- Vitest + Supertest + Faker for tests
+- @scalar/fastify-api-reference / @fastify/swagger for API docs
 
 ## Requirements
 
-- Node.js (v18+ recommended)
-- PostgreSQL database
-- A `.env` file with `DATABASE_URL` pointing to your Postgres instance
+- Node.js 22.x or newer (or a Node runtime that supports running .ts directly)
+- PostgreSQL for development / production
+- A `.env` file with at least:
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/challenge
+JWT_SECRET=your_jwt_secret
+NODE_ENV=development
+```
+
+There is also a `.env.test` file configured for tests (points to `challenge_test`).
 
 ## Quickstart
 
@@ -25,119 +36,116 @@ Small Fastify + TypeScript API used for the Rocketseat challenge. Implements bas
 npm install
 ```
 
-2. Create a `.env` file in the project root with at least:
+2. Prepare environment (.env / .env.test)
 
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-NODE_ENV=development
+3. (Optional) run local Postgres via Docker Compose
+
+```bash
+docker compose up -d
 ```
 
-3. Run database migrations (Drizzle)
+4. Run migrations
 
 ```bash
 npm run db:migrate
 ```
 
-4. Start the server in development
+5. Start server in development
 
 ```bash
 npm run dev
 ```
 
-The server listens on port `3333` by default. When `NODE_ENV=development` the OpenAPI docs are available at `/docs` and the OpenAPI JSON is exposed by Fastify Swagger.
+When `NODE_ENV=development` the OpenAPI docs are available at `/docs` and the OpenAPI JSON is exposed by Fastify Swagger.
 
 ## Available npm scripts
 
-- `npm run dev` — start server in dev mode (uses `node --experimental-strip-types --watch src/server.ts` with `.env`).
-- `npm run db:generate` — run `drizzle-kit generate` to regenerate schema/migrations outputs.
-- `npm run db:migrate` — run `drizzle-kit migrate` to apply pending migrations.
-- `npm run db:studio` — open Drizzle Studio (UI) if configured.
+- `npm run dev` — start server in dev mode (uses `node --env-file .env --watch src/server.ts`). Node 22+ supports running `.ts` directly so the experimental flag is not required.
+- `npm run db:seed` — run `src/db/seed.ts` to populate development DB with sample data.
+- `npm run db:generate` — `drizzle-kit generate`
+- `npm run db:migrate` — `drizzle-kit migrate`
+- `npm run db:studio` — `drizzle-kit studio` (Drizzle Studio)
+- `npm run pretest` — runs migrations against the test DB using `.env.test` before tests
+- `npm run test` — runs the test suite (Vitest). The `test` script uses `.env.test` by default.
 
-## Project layout (important files)
+## Project layout (high level)
 
-- `src/server.ts` — Fastify server setup and route registration
-- `src/http/routes/` — route definitions:
-  - `create-courses.ts` — POST `/courses`
-  - `get-courses.ts` — GET `/courses`
-  - `get-course-by-id.ts` — GET `/courses/:id`
-- `src/db/schema.ts` — Drizzle schema for the `courses` table
-- `src/db/client.ts` — Drizzle client configuration
-- `drizzle.config.ts` — Drizzle kit configuration (reads `DATABASE_URL`)
-- `drizzle/` — generated migrations and SQL files
+- `src/server.ts` — server bootstrap
+- `src/app.ts` — Fastify instance, plugins and docs registration
+- `src/http/routes/*` — route handlers and hooks
+- `src/db/*` — Drizzle client, schema and seed
+- `src/tests/factories/*` — test factories (Faker) used by tests
 
-## API Endpoints
+## API Endpoints (summary)
 
 All endpoints are JSON-based and validated using Zod. The server uses Fastify's type provider for Zod, so request bodies/params and responses follow the schemas defined in the route files.
 
-- GET /courses
-  - Description: Returns a list of courses
-  - Response 200:
-    ```json
-    { "courses": [{ "id": "uuid", "title": "string" }, ...] }
-    ```
-  - Example:
-    ```bash
-    curl http://localhost:3333/courses
-    ```
+- POST /courses — create a course (title required, validated with Zod)
+- GET /courses — list courses
+- GET /courses/:id — get course by id
+- POST /login — authenticate a user and receive a JWT
 
-- GET /courses/:id
-  - Description: Returns a single course by its UUID
-  - URL param: `id` (UUID)
-  - Response 200:
-    ```json
-    { "course": { "id": "uuid", "title": "string", "description": "string|null" } }
-    ```
-  - Response 404: empty body (course not found)
-  - Example:
-    ```bash
-    curl http://localhost:3333/courses/00000000-0000-0000-0000-000000000000
-    ```
+See the route files in `src/http/routes` for full request/response schemas. OpenAPI docs are available at `/docs` in development.
 
-- POST /courses
-  - Description: Create a new course
-  - Body:
-    ```json
-    { "title": "A course title (min 5 chars)" }
-    ```
-  - Response 201:
-    ```json
-    { "courseId": "uuid" }
-    ```
-  - Example:
-    ```bash
-    curl -X POST http://localhost:3333/courses \
-      -H "Content-Type: application/json" \
-      -d '{"title":"My new course"}'
-    ```
+## Authentication & Security
 
-## Database & migrations
+- JWT: the app issues and verifies JWTs using `jsonwebtoken` and expects `JWT_SECRET` in the environment. Routes that require authentication use a `checkJWTRequest` hook.
+- Password hashing: user passwords are hashed with `argon2` (see `src/db/seed.ts` and test factories).
 
-- The project uses Drizzle (drizzle-kit) for migrations and schema generation. The config is in `drizzle.config.ts` and requires `DATABASE_URL` to be set.
-- Migrations (SQL) and snapshots are stored in the `drizzle/` folder.
+Ensure `JWT_SECRET` is set in your environment for both development and tests (the test factories will sign tokens during tests).
 
-Useful commands:
+## Testing
+
+- Test runner: Vitest
+- HTTP assertions: Supertest
+- Factories / fake data: @faker-js/faker (factories are in `src/tests/factories`)
+- Coverage: configured with `@vitest/coverage-v8` (see `coverage/` directory generated by test runs)
+
+Recommended local test flow (uses test DB from `.env.test`):
 
 ```bash
-npm run db:generate   # regenerate outputs/snapshots
-npm run db:migrate    # apply migrations
-npm run db:studio     # open drizzle studio (if applicable)
+# start local Postgres (if needed)
+docker compose up -d
+
+# run migrations against test DB (pretest does this automatically when using npm test)
+npm run pretest
+
+# run tests (script already uses .env.test)
+npm test
 ```
 
-## Development notes
+Note: `pretest` runs `drizzle-kit migrate` using `.env.test` so tests operate against the `challenge_test` database.
 
-- The server uses a custom `dev` script that runs Node with `--experimental-strip-types` to execute TypeScript directly. If you run into issues with the experimental flag or prefer to compile first, use TypeScript compiler:
+## Seeding
+
+Populate dev DB with sample users and courses:
 
 ```bash
-npx tsc
-node dist/server.js
+npm run db:seed
 ```
 
-- Alternatively install `ts-node` for a more standard TypeScript runtime during development.
+Seed uses `argon2` for password hashing and Faker for generated data.
 
-## Troubleshooting
+## Local Postgres (Docker)
 
-- Error: "ERR_UNKNOWN_FILE_EXTENSION" — Node tried to run `.ts` directly without the experimental flag or a loader. Use `npm run dev`, compile with `tsc`, or run with `ts-node`.
-- If migrations fail, confirm `DATABASE_URL` is correct and the database server is reachable.
+- `docker-compose.yml` is included to run Postgres locally. The included `docker/setup.sql` creates the `challenge_test` database for tests.
+- Default connections used by the repo:
+  - Dev DB: `postgresql://postgres:postgres@localhost:5432/challenge`
+  - Test DB: `postgresql://postgres:postgres@localhost:5432/challenge_test`
+
+Start Postgres:
+
+```bash
+docker compose up -d
+```
+
+## Drizzle Studio
+
+Run Drizzle Studio to inspect DB schema and data:
+
+```bash
+npm run db:studio
+```
 
 ## Architecture
 
@@ -178,6 +186,20 @@ sequenceDiagram
 
 Note: GitHub and many Markdown renderers support Mermaid diagrams — if the diagram doesn't render in your viewer, open the file in VS Code with the "Markdown Preview Mermaid Support" extension or view it on GitHub.
 
+## OpenAPI / Swagger
+
+- The project registers OpenAPI (Fastify Swagger) and an alternative UI (`@scalar/fastify-api-reference`) in development. Docs are served at `/docs` when `NODE_ENV=development`.
+
+## Deployment notes
+
+- The app expects `DATABASE_URL` and `JWT_SECRET` to be set in the target environment.
+- Long‑running container hosts (Fly, Render, Docker) work well. Serverless platforms (Vercel) require a pooling strategy for Postgres connections.
+
+## Troubleshooting
+
+- Tests writing to the wrong DB: ensure `npm test` uses `.env.test` (this project uses `dotenv -e .env.test` in `test` and `pretest`).
+- ERR_UNKNOWN_FILE_EXTENSION: using a Node build that supports TypeScript (Node 22+ in this project) removes the need for experimental flags; otherwise compile with `tsc` or use `ts-node`.
+
 ## License
 
-This project uses the `ISC` license (see `package.json`).
+This project is released under the ISC license (see `package.json`).
